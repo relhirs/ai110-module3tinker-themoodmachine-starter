@@ -86,6 +86,7 @@ if __name__ == "__main__":
     evaluate_rule_based(SAMPLE_POSTS, TRUE_LABELS)
 
     run_batch_demo()
+  
 
     run_interactive_loop()
 

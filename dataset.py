@@ -31,11 +31,13 @@ NEGATIVE_WORDS = [
     "terrible",
     "awful",
     "angry",
+    "stuck",
     "upset",
     "tired",
     "stressed",
     "hate",
     "boring",
+    
 ]
 
 # ---------------------------------------------------------------------
@@ -51,8 +53,8 @@ SAMPLE_POSTS = [
     "So excited for the weekend",
     "I am not happy about this",
     "Lowkey stressed but kind of proud of myself",
-    "no cap think this is a disaster :(",
-    "This is my favorite boring food",
+    "no cap think this is terrible:(",
+    "This is my most amazing boring food",
     "Thanks for absolutely nothing :)",
     "I absolutely love getting stuck in traffic",
 ]
@@ -72,7 +74,7 @@ TRUE_LABELS = [
     "negative",  # "I am not happy about this"
     "mixed",     # "Lowkey stressed but kind of proud of myself"
     "negative",  # "no cap think this is a disaster :("
-    "positive",  # "This is my favorite boring food"
+    "neutral",  # "This is my favorite boring food"
     "negative",  # "Thanks for absolutely nothing :)"
     "mixed",     # "I absolutely love getting stuck in traffic"
 

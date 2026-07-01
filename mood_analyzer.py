@@ -91,74 +91,66 @@ class MoodAnalyzer:
     # Scoring logic
     # ---------------------------------------------------------------------
 
-    def score_text(self, text: str) -> int:
-        """
-        Compute a numeric "mood score" for the given text.
+    def score_text(self, text: str) -> tuple[int, bool, bool]:
+       
 
-        Positive words increase the score.
-        Negative words decrease the score.
-
-        TODO: You must choose AT LEAST ONE modeling improvement to implement.
-        For example:
-          - Handle simple negation such as "not happy" or "not bad"
-          - Count how many times each word appears instead of just presence
-          - Give some words higher weights than others (for example "hate" < "annoyed")
-          - Treat emojis or slang (":)", "lol", "💀") as strong signals
-        """
-        # TODO: Implement this method.
-        #   1. Call self.preprocess(text) to get tokens.
-        #   2. Loop over the tokens.
-        #   3. Increase the score for positive words, decrease for negative words.
-        #   4. Return the total score.
-        #
-        # Hint: if you implement negation, you may want to look at pairs of tokens,
-        # like ("not", "happy") or ("never", "fun").
-        
         cleaned_list = self.preprocess(text)
         score = 0
-        for token in cleaned_list:
-            if token in self.positive_words:
-                score += 1
-            elif token in self.negative_words:
-                score -= 1
-            elif token == "not":
-                # Check if the next token is a positive or negative word
-                next_index = cleaned_list.index(token) + 1
+        i = 0 
+        saw_negative = False
+        saw_positive = False 
+
+        while i < len(cleaned_list):
+            token = cleaned_list[i]
+
+            if token == "not":
+                next_index = i + 1
+
+              
+                while (
+                    next_index < len(cleaned_list) 
+                    and cleaned_list[next_index] not in self.positive_words
+                    and cleaned_list[next_index] not in self.negative_words
+                ): #prevents a case of "not very good" where very is counted
+                    next_index += 1
+                        
                 if next_index < len(cleaned_list):
                     next_token = cleaned_list[next_index]
                     if next_token in self.positive_words:
                         score -= 1  # Negate the positive word
+                        saw_negative = True
                     elif next_token in self.negative_words:
                         score += 1  # Negate the negative word
-                
-        return score
+                        saw_positive = True
+                        
+                    i = next_index 
+
+            elif token in self.positive_words:
+                score += 1
+                saw_positive = True
+            elif token in self.negative_words:
+                score -= 1
+                saw_negative = True
+            
+            i += 1
+                    
+        return score, saw_positive, saw_negative 
+    
+    
 
     # ---------------------------------------------------------------------
     # Label prediction
     # ---------------------------------------------------------------------
 
     def predict_label(self, text: str) -> str:
-        """
-        Turn the numeric score for a piece of text into a mood label.
+        score, saw_positive, saw_negative = self.score_text(text)
 
-        The default mapping is:
-          - score > 0  -> "positive"
-          - score < 0  -> "negative"
-          - score == 0 -> "neutral"
-
-        TODO: You can adjust this mapping if it makes sense for your model.
-        For example:
-          - Use different thresholds (for example score >= 2 to be "positive")
-          - Add a "mixed" label for scores close to zero
-        Just remember that whatever labels you return should match the labels
-        you use in TRUE_LABELS in dataset.py if you care about accuracy.
-        """
-        # TODO: Implement this method.
-        #   1. Call self.score_text(text) to get the numeric score.
-        #   2. Return "positive" if the score is above 0.
-        #   3. Return "negative" if the score is below 0.
-        #   4. Return "neutral" otherwise.
-        score = self.score_text(text)
+        if saw_positive and saw_negative:
+            if score == 0:
+                return "mixed"
+            else:
+                return "neutral"
+        
         if score > 0:
             return "positive"
         elif score < 0:
