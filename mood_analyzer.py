@@ -9,9 +9,28 @@ This class starts with very simple logic:
   - Convert that score into a mood label
 """
 
+import re
 from typing import List, Dict, Tuple, Optional
 
 from dataset import POSITIVE_WORDS, NEGATIVE_WORDS
+
+# Text emoticons such as ":)", ":-(", ";D", "=P".
+_EMOTICON_RE = re.compile(r"[:;=xX][-~^]?[)\](\[dDpP/\\|3oO]")
+
+# Unicode emoji characters (faces, symbols, misc pictographs, flags).
+_EMOJI_RE = re.compile(
+    "["
+    "\U0001F300-\U0001FAFF"
+    "\U00002600-\U000027BF"
+    "\U0001F1E6-\U0001F1FF"
+    "]"
+)
+
+# Anything that isn't a word character or whitespace (i.e. punctuation).
+_PUNCT_RE = re.compile(r"[^\w\s]")
+
+# Three or more repeated characters in a row, e.g. "soooo" -> "soo".
+_REPEATED_CHARS_RE = re.compile(r"(.)\1{2,}")
 
 
 class MoodAnalyzer:
@@ -53,9 +72,20 @@ class MoodAnalyzer:
           - Normalize repeated characters ("soooo" -> "soo")
         """
         cleaned = text.strip().lower()
-        tokens = cleaned.split()
 
-        return tokens
+        # Pull out emojis and emoticons first so punctuation stripping
+        # doesn't destroy them (e.g. ":)" would otherwise lose ":" and ")").
+        emojis = _EMOJI_RE.findall(cleaned)
+        cleaned = _EMOJI_RE.sub(" ", cleaned)
+
+        emoticons = _EMOTICON_RE.findall(cleaned)
+        cleaned = _EMOTICON_RE.sub(" ", cleaned)
+
+        cleaned = _PUNCT_RE.sub(" ", cleaned)
+
+        tokens = [_REPEATED_CHARS_RE.sub(r"\1\1", token) for token in cleaned.split()]
+
+        return tokens + emoticons + emojis
 
     # ---------------------------------------------------------------------
     # Scoring logic
@@ -83,7 +113,25 @@ class MoodAnalyzer:
         #
         # Hint: if you implement negation, you may want to look at pairs of tokens,
         # like ("not", "happy") or ("never", "fun").
-        pass
+        
+        cleaned_list = self.preprocess(text)
+        score = 0
+        for token in cleaned_list:
+            if token in self.positive_words:
+                score += 1
+            elif token in self.negative_words:
+                score -= 1
+            elif token == "not":
+                # Check if the next token is a positive or negative word
+                next_index = cleaned_list.index(token) + 1
+                if next_index < len(cleaned_list):
+                    next_token = cleaned_list[next_index]
+                    if next_token in self.positive_words:
+                        score -= 1  # Negate the positive word
+                    elif next_token in self.negative_words:
+                        score += 1  # Negate the negative word
+                
+        return score
 
     # ---------------------------------------------------------------------
     # Label prediction
@@ -110,7 +158,13 @@ class MoodAnalyzer:
         #   2. Return "positive" if the score is above 0.
         #   3. Return "negative" if the score is below 0.
         #   4. Return "neutral" otherwise.
-        pass
+        score = self.score_text(text)
+        if score > 0:
+            return "positive"
+        elif score < 0:
+            return "negative"
+        else:
+            return "neutral"
 
     # ---------------------------------------------------------------------
     # Explanations (optional but recommended)
